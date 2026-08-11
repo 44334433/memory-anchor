@@ -72,6 +72,7 @@ cam after my-session --messages messages.json --budget 2000
 # diagnostics
 cam status  my-session   # counts + manifest files
 cam verify  my-session   # schema check (exit 0/1)
+cam judge --before m.json --after summary.txt   # audit a compaction (v0.3)
 ```
 
 - `--rule ID|TEXT|PRIORITY`, `--todo TITLE|STATUS|NEXT`, `--decision TITLE|DECISION|WHY`,
@@ -108,6 +109,38 @@ Note: done todos and superseded decisions are *intentionally* not re-injected
 (``done work must not resurrect``) — the report separates these from
 token-trimming.
 
+## Audit an existing compaction (`cam judge`)
+
+`compaction_drill` runs the experiment; `cam judge` audits a compaction that
+*already happened* (e.g. the summary your framework just produced). Give it
+the before-manifest and the after-text; it classifies every tracked item as
+`verbatim` / `paraphrased` / `lost` using whitespace-folded fuzzy matching
+(stdlib `difflib`, sliding-window best-match so short items are found inside
+long summaries):
+
+```bash
+cam judge --before m.json --after summary.txt              # human report
+cam judge --before m.json --after summary.txt --json       # machine report
+cam judge --before m.json --after summary.txt --min-verbatim 90   # CI gate (exit 1 below)
+```
+
+Rules are graded strictly (design contract #1): a *paraphrased* rule is
+reported as lost — rules must survive verbatim or not at all. `--min-retention`
+/ `--min-verbatim` turn the report into a tripwire for your compression
+pipeline (cron / CI): exit 1 when retention drops below the threshold.
+
+Measured dogfood run (8 key items from a sample context
+lifted verbatim, two real compressors):
+
+| compressor | size | verbatim | lost |
+|---|---|---|---|
+| rule-based compressor (conservative) | 100% | 5/5 (100%) | 0 |
+| built-in extractive (35%) | 35% | 3/5 (60%) | 2 (rules R2/R3) |
+
+The conservative compressor keeps everything; the aggressive one silently
+drops two tracked rules — exactly the loss `judge` exists to make visible.
+Reproduce: `python3 examples/judge_dogfood.py`.
+
 ## Design contract
 
 1. **Verbatim or nothing.** Rules, decisions and verification paths are stored
@@ -123,10 +156,13 @@ token-trimming.
 ## Roadmap
 
 - **v0.1** — core classes, JSON schema, demo closure, CI, bilingual docs
-- **v0.2 (this)** — CLI (`cam before/after/status/verify`), compaction drill
+- **v0.2** — CLI (`cam before/after/status/verify`), compaction drill
   (measured retention experiment)
-- **v0.3** — framework adapters (LangChain / Claude Code / OpenHands…), SQLite
-  backend, optional LLM judge for compression quality
+- **v0.3 (this)** — `cam judge` compaction audit (verbatim/paraphrased/lost
+  classification, JSON report, CI gates), measured dogfood against real
+  compressors
+- **v0.4** — framework adapters (LangChain / Claude Code / OpenHands…), SQLite
+  backend, optional LLM judge for semantic retention
 
 ## Related work
 

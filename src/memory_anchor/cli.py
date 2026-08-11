@@ -200,6 +200,17 @@ def _cmd_verify(store: MemoryStore, args) -> int:
     return 0
 
 
+def _cmd_judge(store: MemoryStore, args) -> int:
+    from .judge import main as judge_main
+
+    return judge_main([
+        "--before", str(args.before),
+        "--after", args.after,
+    ] + (["--json"] if args.json else [])
+      + (["--min-retention", str(args.min_retention)] if args.min_retention is not None else [])
+      + (["--min-verbatim", str(args.min_verbatim)] if args.min_verbatim is not None else []))
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="cam",
@@ -234,6 +245,22 @@ def main(argv: list[str] | None = None) -> int:
     p_verify = sub.add_parser("verify", help="validate latest manifest against schema")
     p_verify.add_argument("session")
     p_verify.set_defaults(func=_cmd_verify)
+
+    p_judge = sub.add_parser(
+        "judge",
+        help="audit a compaction: classify manifest items as verbatim/paraphrased/lost "
+             "against the after-text",
+    )
+    p_judge.add_argument("--before", required=True, metavar="MANIFEST.json",
+                         help="manifest snapshot taken BEFORE compaction")
+    p_judge.add_argument("--after", required=True, metavar="TEXT|'-'",
+                         help="compressed context / summary text file; '-' = stdin")
+    p_judge.add_argument("--json", action="store_true", help="machine-readable JSON report")
+    p_judge.add_argument("--min-retention", type=float, default=None, metavar="PCT",
+                         help="gate: exit 1 when retention (verbatim+paraphrased) < PCT")
+    p_judge.add_argument("--min-verbatim", type=float, default=None, metavar="PCT",
+                         help="gate: exit 1 when verbatim rate < PCT")
+    p_judge.set_defaults(func=_cmd_judge)
 
     args = parser.parse_args(argv)
     store = MemoryStore(args.base_dir)

@@ -59,6 +59,7 @@ cam after my-session --messages messages.json --budget 2000
 # 诊断
 cam status  my-session   # 条目统计 + manifest 文件
 cam verify  my-session   # schema 校验（退出码 0/1）
+cam judge --before m.json --after summary.txt   # 审计一次压缩（v0.3）
 ```
 
 - `--rule ID|TEXT|PRIORITY`、`--todo TITLE|STATUS|NEXT`、`--decision TITLE|DECISION|WHY`、`--progress STEP|ARTIFACT`、`--pointer ...`——或 `--manifest file.json` 加载完整 manifest（载入时做 schema 校验）。
@@ -86,6 +87,27 @@ python3 examples/compaction_drill.py --input context.txt --manifest m.json \
 
 注意：已完成的待办与被取代的决策**有意不重新注入**（\"已办不复活\"）——报告会把它与 token 裁剪区分开。
 
+## 审计已发生的压缩（`cam judge`）
+
+`compaction_drill` 做实验；`cam judge` 审计**已经发生**的压缩（比如你的框架刚产出的摘要）。输入压缩前 manifest 与压缩后文本，它把每条追踪项判定为 `verbatim`（逐字存活）/ `paraphrased`（被改写）/ `lost`（丢失）——基于空白折叠模糊匹配（stdlib `difflib`，滑动窗口最佳匹配，短条目也能在大摘要中找到）：
+
+```bash
+cam judge --before m.json --after summary.txt              # 人类可读报告
+cam judge --before m.json --after summary.txt --json       # 机器可读报告
+cam judge --before m.json --after summary.txt --min-verbatim 90   # CI 门禁（低于则退出 1）
+```
+
+规则按最严格标准评分（设计契约 #1）：被改写的规则视同丢失——规则要么逐字存活要么不存在。`--min-retention` / `--min-verbatim` 把报告变成压缩管线的绊线（cron / CI）：保留率低于阈值即退出码 1。
+
+真实 dogfood 运行（8 条关键项逐字摘录，两个真实压缩器）：
+
+| 压缩器 | 体积 | 逐字存活 | 丢失 |
+|---|---|---|---|
+| rule-based `-l2 --reach`（保守） | 100% | 5/5（100%） | 0 |
+| 内置提取式（35%） | 35% | 3/5（60%） | 2（规则 R2/R3） |
+
+保守压缩器保留一切；激进压缩器静默丢掉两条被追踪的规则——这正是 `judge` 存在的意义：让损失可见。复现：`python3 examples/judge_dogfood.py`。
+
 ## 设计契约
 
 1. **要么逐字，要么没有。** 规则、决策、验证路径以原文存储并按原文注入，不做任何转述。摘要模型无法精确复现的内容，就不该出现在摘要里。
@@ -94,9 +116,10 @@ python3 examples/compaction_drill.py --input context.txt --manifest m.json \
 
 ## Roadmap
 
-- **v0.1（当前）** — 核心类、JSON Schema、演示闭环、CI、双语文档
-- **v0.2** — 框架适配器（LangChain / Claude Code / OpenHands…）、CLI（`cam before-compact` / `cam after-compact` / `cam status` / `cam verify`）
-- **v0.3** — SQLite 后端、可选 LLM judge 压缩质量评估
+- **v0.1** — 核心类、JSON Schema、演示闭环、CI、双语文档
+- **v0.2** — CLI（`cam before/after/status/verify`）、compaction drill（实测保留率实验）
+- **v0.3（当前）** — `cam judge` 压缩审计（verbatim/paraphrased/lost 分类、JSON 报告、CI 门禁）、真实压缩器 dogfood 实测
+- **v0.4** — 框架适配器（LangChain / Claude Code / OpenHands…）、SQLite 后端、可选 LLM 语义保留评估
 
 ## 相关项目
 
