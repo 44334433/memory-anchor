@@ -42,6 +42,50 @@ pip install -e .        # 零依赖
 pytest                  # models / store / recovery / 演示闭环
 ```
 
+## CLI（`cam`）
+
+面向 cron 任务、shell 管道与框架钩子的可脚本化压缩工作流——无需写 Python：
+
+```bash
+# 压缩前：快照必须存活的内容
+cam before my-session \
+  --rule "R1|绝不转述行为规则|100" \
+  --todo "发布 v0.2|pending|跑 drill" \
+  --decision "压缩器|先用提取式|零依赖"
+
+# 压缩后：重新注入恢复块
+cam after my-session --messages messages.json --budget 2000
+
+# 诊断
+cam status  my-session   # 条目统计 + manifest 文件
+cam verify  my-session   # schema 校验（退出码 0/1）
+```
+
+- `--rule ID|TEXT|PRIORITY`、`--todo TITLE|STATUS|NEXT`、`--decision TITLE|DECISION|WHY`、`--progress STEP|ARTIFACT`、`--pointer ...`——或 `--manifest file.json` 加载完整 manifest（载入时做 schema 校验）。
+- `--messages -` 从 stdin 读消息 JSON、把恢复后的列表写到 stdout——管道友好。
+- 退出码 0=成功，1=失败；数据走 stdout，错误走 stderr。
+
+## 实测：压缩到底毁掉了什么（compaction_drill）
+
+`examples/compaction_drill.py` 是可复现的前后对照实验：给定一段长上下文，经压缩器（内置提取式，或 `--compressor` 指定的任意外部命令）压缩，量化关键条目的逐字存活率——有 memory-anchor 与没有的对比。
+
+对 8KB 中文样例文本（10 条追踪项：规则/待办/决策/进度）的真实运行：
+
+| 压缩器 | 上下文 | 对照组（仅压缩器） | 实验组（+ memory-anchor） |
+|---|---|---|---|
+| 内置提取式（35%） | 8,035 字符 | 8/10 存活（80%） | **10/10（100%）** |
+| rule-based 规则压缩器（`-l 2`） | 8,035 字符 | 9/10 存活（90%） | **10/10（100%）** |
+
+复现：
+
+```bash
+python3 examples/compaction_drill.py --input context.txt --manifest m.json
+python3 examples/compaction_drill.py --input context.txt --manifest m.json \
+    --compressor "python3 /path/to/your/compressor.py"
+```
+
+注意：已完成的待办与被取代的决策**有意不重新注入**（\"已办不复活\"）——报告会把它与 token 裁剪区分开。
+
 ## 设计契约
 
 1. **要么逐字，要么没有。** 规则、决策、验证路径以原文存储并按原文注入，不做任何转述。摘要模型无法精确复现的内容，就不该出现在摘要里。

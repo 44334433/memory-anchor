@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "memory-anchor"
-version = "0.1.0"
+version = "0.2.0"
 description = "Compaction-aware memory layer: preserve rules/todos/decisions/progress before context compression, re-inject after. Zero dependencies, pure stdlib."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -17,6 +17,9 @@ classifiers = [
     "Operating System :: OS Independent",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+
+[project.scripts]
+cam = "memory_anchor.cli:main"
 
 [project.urls]
 Repository = "https://github.com/44334433/memory-anchor"

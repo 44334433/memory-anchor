@@ -54,6 +54,60 @@ pip install -e .        # zero dependencies
 pytest                  # models / store / recovery / demo closure
 ```
 
+## CLI (`cam`)
+
+Scriptable compaction workflow for cron jobs, shell pipelines and framework
+hooks — no Python required:
+
+```bash
+# before compaction: snapshot what must survive
+cam before my-session \
+  --rule "R1|never paraphrase governing rules|100" \
+  --todo "ship v0.2|pending|run the drill" \
+  --decision "compressor|use extractive first|zero deps"
+
+# after compaction: re-inject the recovery block
+cam after my-session --messages messages.json --budget 2000
+
+# diagnostics
+cam status  my-session   # counts + manifest files
+cam verify  my-session   # schema check (exit 0/1)
+```
+
+- `--rule ID|TEXT|PRIORITY`, `--todo TITLE|STATUS|NEXT`, `--decision TITLE|DECISION|WHY`,
+  `--progress STEP|ARTIFACT`, `--pointer ...` — or `--manifest file.json` for a
+  full manifest (schema-validated on load).
+- `--messages -` reads messages JSON from stdin and writes the recovered list
+  to stdout — pipe-friendly.
+- Exit code 0 = ok, 1 = failure; data on stdout, errors on stderr.
+
+## Measured: what compaction destroys (compaction_drill)
+
+`examples/compaction_drill.py` is a reproducible before/after experiment. It
+takes a long context, runs it through a compressor (built-in extractive, or
+any external command via `--compressor`), and measures how many tracked key
+items survive verbatim — with and without memory-anchor.
+
+Real run against 8 KB of Chinese-language sample text
+(Chinese, 10 tracked items: rules / todos / decisions / progress):
+
+| compressor | context | control (compressor alone) | treatment (+ memory-anchor) |
+|---|---|---|---|
+| built-in extractive (35%) | 8,035 ch | 8/10 survived (80%) | **10/10 (100%)** |
+| rule-based compressor (conservative) | 8,035 ch | 9/10 survived (90%) | **10/10 (100%)** |
+
+Reproduce:
+
+```bash
+python3 examples/compaction_drill.py --input context.txt --manifest m.json
+python3 examples/compaction_drill.py --input context.txt --manifest m.json \
+    --compressor "python3 /path/to/your/compressor.py"
+```
+
+Note: done todos and superseded decisions are *intentionally* not re-injected
+(``done work must not resurrect``) — the report separates these from
+token-trimming.
+
 ## Design contract
 
 1. **Verbatim or nothing.** Rules, decisions and verification paths are stored
@@ -68,10 +122,11 @@ pytest                  # models / store / recovery / demo closure
 
 ## Roadmap
 
-- **v0.1 (this)** — core classes, JSON schema, demo closure, CI, bilingual docs
-- **v0.2** — framework adapters (LangChain / Claude Code / OpenHands…), CLI
-  (`cam before-compact` / `cam after-compact` / `cam status` / `cam verify`)
-- **v0.3** — SQLite backend, optional LLM judge for compression quality
+- **v0.1** — core classes, JSON schema, demo closure, CI, bilingual docs
+- **v0.2 (this)** — CLI (`cam before/after/status/verify`), compaction drill
+  (measured retention experiment)
+- **v0.3** — framework adapters (LangChain / Claude Code / OpenHands…), SQLite
+  backend, optional LLM judge for compression quality
 
 ## Related work
 
