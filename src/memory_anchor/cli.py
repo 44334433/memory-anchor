@@ -1,4 +1,4 @@
-"""cam — command-line front-end for memory-anchor (v0.2).
+"""cam — command-line front-end for memory-anchor (v0.3).
 
 Scriptable compaction workflow:
 

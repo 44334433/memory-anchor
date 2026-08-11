@@ -75,7 +75,7 @@ cam judge --before m.json --after summary.txt   # 审计一次压缩（v0.3）
 | 压缩器 | 上下文 | 对照组（仅压缩器） | 实验组（+ memory-anchor） |
 |---|---|---|---|
 | 内置提取式（35%） | 8,035 字符 | 8/10 存活（80%） | **10/10（100%）** |
-| rule-based 规则压缩器（`-l 2`） | 8,035 字符 | 9/10 存活（90%） | **10/10（100%）** |
+| 规则压缩器（保守） | 8,035 字符 | 9/10 存活（90%） | **10/10（100%）** |
 
 复现：
 
@@ -103,7 +103,7 @@ cam judge --before m.json --after summary.txt --min-verbatim 90   # CI 门禁（
 
 | 压缩器 | 体积 | 逐字存活 | 丢失 |
 |---|---|---|---|
-| rule-based `-l2 --reach`（保守） | 100% | 5/5（100%） | 0 |
+| 规则压缩器（保守） | 100% | 5/5（100%） | 0 |
 | 内置提取式（35%） | 35% | 3/5（60%） | 2（规则 R2/R3） |
 
 保守压缩器保留一切；激进压缩器静默丢掉两条被追踪的规则——这正是 `judge` 存在的意义：让损失可见。复现：`python3 examples/judge_dogfood.py`。
@@ -118,7 +118,8 @@ cam judge --before m.json --after summary.txt --min-verbatim 90   # CI 门禁（
 
 - **v0.1** — 核心类、JSON Schema、演示闭环、CI、双语文档
 - **v0.2** — CLI（`cam before/after/status/verify`）、compaction drill（实测保留率实验）
-- **v0.3（当前）** — `cam judge` 压缩审计（verbatim/paraphrased/lost 分类、JSON 报告、CI 门禁）、真实压缩器 dogfood 实测
+- **v0.3（当前）** — cam judge 压缩审计（verbatim/paraphrased/lost 分类、JSON 报告、CI 门禁）、真实压缩器 dogfood 实测
+- **v0.3.1（当前）** — 决策 provenance：决策携带 `source` + `evidence`（来源与依据），`cam judge` 把 provenance 计入评分——只留结论丢掉"为什么"的摘要不再算逐字存活
 - **v0.4** — 框架适配器（LangChain / Claude Code / OpenHands…）、SQLite 后端、可选 LLM 语义保留评估
 
 ## 相关项目

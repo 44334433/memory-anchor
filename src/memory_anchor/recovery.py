@@ -22,7 +22,7 @@ _L5_HEADING = "## Recovery Pointers"
 
 class RecoveryInjector:
     def __init__(self, store=None, prompt_builder: Optional["object"] = None):
-        # store is accepted for API symmetry ; the v0.1
+        # store is accepted for API symmetry; the v0.1
         # injector itself is a pure function of the manifest.
         self._store = store
         self._prompt_builder = prompt_builder

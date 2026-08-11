@@ -90,7 +90,7 @@ any external command via `--compressor`), and measures how many tracked key
 items survive verbatim — with and without memory-anchor.
 
 Real run against 8 KB of Chinese-language sample text
-(Chinese, 10 tracked items: rules / todos / decisions / progress):
+(10 tracked items: rules / todos / decisions / progress):
 
 | compressor | context | control (compressor alone) | treatment (+ memory-anchor) |
 |---|---|---|---|
@@ -129,8 +129,8 @@ reported as lost — rules must survive verbatim or not at all. `--min-retention
 / `--min-verbatim` turn the report into a tripwire for your compression
 pipeline (cron / CI): exit 1 when retention drops below the threshold.
 
-Measured dogfood run (8 key items from a sample context
-lifted verbatim, two real compressors):
+Measured dogfood run (8 key items from a sample context, lifted verbatim,
+two real compressors):
 
 | compressor | size | verbatim | lost |
 |---|---|---|---|
@@ -184,8 +184,8 @@ file Y behaved this way on date Z" no longer passes the audit.
 
 ## Related work
 
-- Other context compressors handle the compression; memory-anchor
-  remembers what compression forgets. Complementary, not competing.
+- Other context compressors handle the compression; memory-anchor keeps
+  what compression forgets. Complementary, not competing.
 - mem0 / Letta / other memory systems solve *long-term memory*; memory-anchor solves the
   *compaction handoff*.
 

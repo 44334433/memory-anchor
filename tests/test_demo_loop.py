@@ -13,14 +13,14 @@ from memory_anchor import (
     TodoItem,
 )
 
-R1 = "never paraphrase governing rules"
+RULE_1 = "never paraphrase governing rules"
 
 
 class FakeContext:
     def __init__(self):
         self.session_id = "demo-session"
         self.intent = "build feature X"
-        self.rules = [RuleItem(rule_id="R1", text=R1, source="AGENTS.md")]
+        self.rules = [RuleItem(rule_id="R1", text=RULE_1, source="AGENTS.md")]
         self.todos = [
             TodoItem(todo_id="t1", title="wire RecoveryInjector",
                      next_action="edit recovery.py"),
@@ -78,7 +78,7 @@ def test_demo_closure(tmp_path):
     # Step 5: closure assertions — everything lost by the summarizer is back
     blocks = [m["content"] for m in restored if m["role"] == "system"]
     block = "\n".join(blocks)
-    assert R1 in block                      # rules verbatim
+    assert RULE_1 in block                       # rules verbatim
     assert "wire RecoveryInjector" in block       # pending todos
     assert "write README" in block
     assert "local JSON files" in block            # decisions verbatim

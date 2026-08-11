@@ -29,9 +29,9 @@ LIFTED = [
     # rules (things the agent must keep operating by)
     ("R1", "Meta 发布 Muse Glimmer：30B 开源\"常驻本地 Agent\"模型"),
     ("R2", "Claude 研究版把黎曼 ζ 零点\"临界线上比例\"下界从 41.6% 提到 67.2%"),
-    ("R3", "Agent 记忆层正从"短期上下文"走向"分层持久化""),
+    ("R3", "Agent 记忆层正从\"短期上下文\"走向\"分层持久化\""),
     # todos (work items)
-    ("T1", "把\"手动标记弃用\"手工标注升级为\"可逆逐出 + verbatim 归档 + 冲突状态\"机制"),
+    ("T1", "将\"手动标记弃用\"升级为\"可逆逐出 + verbatim 归档 + 冲突状态\"机制"),
     ("T2", "Agent 行业正朝\"长期运行\"演进，本地记忆层成为标配"),
     # decisions (verbatim substrings incl. markdown markers as in source)
     ("D1", '**忘什么、何时忘、怎么可逆地忘**'),
@@ -58,13 +58,13 @@ def main() -> int:
         assert " ".join(v.split()) in folded_src, f"{k} not verbatim in source!"
 
     # Real compressors, two regimes:
-    #  A) rule-based (conservative rule-based — keeps facts, drops filler)
+    #  A) conservative rule-based compressor (keeps facts, drops filler)
     #  B) extractive (aggressive first-sentence summarizer — loses detail)
     regimes = []
     compressor = os.environ.get("COMPRESSOR", "")
     if compressor:
         proc = subprocess.run(
-            ["python3", compressor, "-l", "2", "--reach", "-r", "0.6", str(CTX)],
+            ["python3", compressor, str(CTX)],
             capture_output=True, text=True, timeout=120,
         )
         if proc.returncode != 0:
