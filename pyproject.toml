@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "memory-anchor"
-version = "0.3.0"
+version = "0.3.1"
 description = "Compaction-aware memory layer: preserve rules/todos/decisions/progress before context compression, re-inject after. Zero dependencies, pure stdlib."
 readme = "README.md"
 requires-python = ">=3.10"
