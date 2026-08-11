@@ -169,3 +169,42 @@ def test_cli_judge_stdin(base_dir: Path):
     assert p.returncode == 0, p.stderr
     report = json.loads(p.stdout)
     assert report["items"][0]["verdict"] == "verbatim"
+
+
+def test_decision_provenance_loss_is_detected(manifest):
+    """A summary that keeps the conclusion but drops the provenance must not
+    score verbatim — 'we decided X' without 'because file Y on date Z' is a
+    decision that can no longer be challenged (community feedback)."""
+    d = DecisionItem(
+        decision_id="d2",
+        title="compressor choice",
+        decision="use extractive first",
+        rationale="extractive preserves verbatim text",
+        source="benchmarks/run-2026-08-11.md",
+        evidence="measured retention 80% vs 60%",
+    )
+    m = StateManifest(session_id="s-prov", decisions=[d])
+    # summary keeps the decision but drops rationale/source/evidence
+    after = "we chose extractive first. other notes here."
+    verdicts = audit_manifest(m, after)
+    v = next(x for x in verdicts if x.label == "d2")
+    assert v.verdict != "verbatim"
+    assert v.verdict == "lost" or v.verdict == "paraphrased"
+
+
+def test_decision_full_provenance_survives_verbatim(manifest):
+    """Decision + rationale + source + evidence all present = verbatim."""
+    d = DecisionItem(
+        decision_id="d3",
+        title="compressor choice",
+        decision="use extractive first",
+        rationale="extractive preserves verbatim text",
+        source="benchmarks/run-2026-08-11.md",
+        evidence="measured retention 80% vs 60%",
+    )
+    m = StateManifest(session_id="s-prov2", decisions=[d])
+    after = ("use extractive first extractive preserves verbatim text "
+             "benchmarks/run-2026-08-11.md measured retention 80% vs 60%")
+    verdicts = audit_manifest(m, after)
+    v = next(x for x in verdicts if x.label == "d3")
+    assert v.verdict == "verbatim"

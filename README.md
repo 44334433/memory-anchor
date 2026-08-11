@@ -161,8 +161,26 @@ Reproduce: `python3 examples/judge_dogfood.py`.
 - **v0.3 (this)** — `cam judge` compaction audit (verbatim/paraphrased/lost
   classification, JSON report, CI gates), measured dogfood against real
   compressors
+- **v0.3.1 (this)** — decision provenance: decisions carry `source` + `evidence`
+  (where the decision came from, what it was based on), and `cam judge` grades
+  provenance as part of the decision — a summary that keeps the conclusion but
+  drops the *why* no longer scores verbatim
 - **v0.4** — framework adapters (LangChain / Claude Code / OpenHands…), SQLite
   backend, optional LLM judge for semantic retention
+
+## Community feedback
+
+> "Compaction gets dangerous when it preserves conclusions but drops
+> provenance. For coding agents, 'we decided X' is weaker than 'we decided X
+> because file Y behaved this way on date Z.' Without the why and the source,
+> the compressed memory can steer future code while becoming impossible to
+> challenge." — [alexshev](https://dev.to/alexshev), on
+> [the DEV.to launch post](https://dev.to/linfordr/context-compaction-is-silently-destroying-your-llm-agents-memory-2pg2)
+
+This is exactly the failure mode v0.3.1 targets: decisions now carry
+`source` + `evidence`, and `cam judge` treats provenance as part of the
+decision — a compressed memory that keeps "we decided X" but drops "because
+file Y behaved this way on date Z" no longer passes the audit.
 
 ## Related work
 

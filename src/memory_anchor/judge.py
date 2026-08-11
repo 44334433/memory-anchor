@@ -105,7 +105,15 @@ def audit_manifest(manifest: StateManifest, after_text: str) -> List[ItemVerdict
             ItemVerdict("todos", t.todo_id, t.title, _classify(sim, False), round(sim, 4))
         )
     for d in manifest.decisions:
-        sim = _similarity(_fold(d.decision), folded)
+        # Provenance is part of the decision: "we decided X" without
+        # "because file Y behaved this way on date Z" is a decision that
+        # can no longer be challenged. Fold rationale/source/evidence into
+        # the matched text so a summary that keeps the conclusion but drops
+        # the provenance scores below verbatim (see community feedback:
+        # "compaction preserves conclusions but drops provenance").
+        provenance = " ".join(x for x in (d.rationale, d.source, d.evidence) if x)
+        matched = f"{d.decision} {provenance}".strip()
+        sim = _similarity(_fold(matched), folded)
         verdicts.append(
             ItemVerdict("decisions", d.decision_id, d.title, _classify(sim, False), round(sim, 4))
         )

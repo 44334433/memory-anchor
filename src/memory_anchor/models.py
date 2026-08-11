@@ -49,6 +49,8 @@ class DecisionItem:
     title: str
     decision: str
     rationale: str = ""
+    source: str = ""  # provenance: where the decision came from (file/thread/URL)
+    evidence: str = ""  # provenance: what the decision was based on (fact/measurement/date)
     status: str = "made"  # made | tentative | superseded
     timestamp: str = ""
 

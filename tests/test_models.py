@@ -72,3 +72,34 @@ def test_from_json_rejects_unknown_schema_version():
         assert False, "should have raised"
     except ValueError:
         pass
+
+
+def test_decision_provenance_round_trip():
+    """Provenance (source/evidence) must survive JSON round-trips (v0.3.1)."""
+    d = DecisionItem(
+        decision_id="d2",
+        title="drop adapter layer",
+        decision="no adapters until a real integration asks",
+        rationale="no demand signals yet",
+        source="benchmarks/run-1.md",
+        evidence="measured retention 80% vs 60%",
+    )
+    m = StateManifest(session_id="s-prov", decisions=[d])
+    m2 = StateManifest.from_json(m.to_json())
+    d2 = m2.decisions[0]
+    assert d2.source == "benchmarks/run-1.md"
+    assert d2.evidence == "measured retention 80% vs 60%"
+    assert d2.rationale == "no demand signals yet"
+
+
+def test_legacy_decision_without_provenance_still_parses():
+    """Old manifests (no source/evidence keys) must keep working."""
+    m = StateManifest.from_dict({
+        "schema_version": 1, "session_id": "s-legacy",
+        "intent": "", "rules": [], "todos": [],
+        "decisions": [{"decision_id": "d1", "title": "old",
+                       "decision": "use JSON"}],
+        "progress": [], "recovery_pointers": [],
+    })
+    assert m.decisions[0].source == ""
+    assert m.decisions[0].evidence == ""
