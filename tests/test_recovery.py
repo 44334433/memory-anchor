@@ -15,7 +15,7 @@ def _manifest() -> StateManifest:
         session_id="s1",
         rules=[
             RuleItem(rule_id="R1", text="never paraphrase governing rules"),
-            RuleItem(rule_id="R2", text="FACT protocol", immutable=False),
+            RuleItem(rule_id="R2", text="verify facts before acting", immutable=False),
         ],
         todos=[
             TodoItem(todo_id="t1", title="wire hook", next_action="edit hooks.py"),
@@ -47,7 +47,7 @@ def test_immutable_rules_never_trimmed_even_with_tiny_budget():
     inj = RecoveryInjector()
     block = inj.build_recovery_block(_manifest(), token_budget=10)
     assert "R1" in block  # L1 survives
-    assert "FACT protocol" in block  # non-immutable rule also present (rules section)
+    assert "verify facts before acting" in block  # non-immutable rule also present (rules section)
     assert "wire hook" not in block  # L2 trimmed
 
 

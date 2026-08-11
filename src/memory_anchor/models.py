@@ -19,7 +19,7 @@ def _now_iso() -> str:
 
 @dataclass
 class RuleItem:
-    """A governing rule (e.g. a GOV / AGENTS.md clause).
+    """A governing rule (e.g. an AGENTS.md clause).
 
     ``immutable=True`` means the summarizer must never rewrite or paraphrase
     the text — recovery re-injects it verbatim and the L1 layer is never

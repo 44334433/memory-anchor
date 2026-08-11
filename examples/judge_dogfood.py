@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""Dogfood: run the real rule-based compressor + cam judge on a real briefing.
+"""Dogfood: run a real rule-based compressor + cam judge on a real briefing.
 
 Design-contract compliant: every manifest item is a *verbatim* snippet lifted
-from the demo briefing (preserve() must be fed from source text, not
-from a paraphrase — that is memory-anchor's own contract #2).
+from the briefing (preserve() must be fed from source text, not from a
+paraphrase — that is memory-anchor's own contract #2).
 
 Pipeline:
   1. lift 8 key sentences verbatim from the briefing -> manifest
-  2. compress the briefing with the real ~/.host/scripts/compress_context.py
-     (-l 2 --reach, ratio 0.6)
+  2. compress the briefing with a local compressor script
+     (path via --compressor <path> or $COMPRESSOR, default: none — skip)
   3. audit compressed output with cam judge -> measure verbatim retention
 """
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -23,7 +24,7 @@ from memory_anchor.models import RuleItem, StateManifest, TodoItem
 BASE = Path("/tmp/judge-dogfood")
 CTX = BASE / "context.txt"
 
-# Verbatim sentences lifted from briefing-2026-08-11.md (line: text)
+# Verbatim sentences lifted from the source briefing (line: text)
 LIFTED = [
     # rules (things the agent must keep operating by)
     ("R1", "Meta 发布 Muse Glimmer：30B 开源\"常驻本地 Agent\"模型"),
@@ -60,15 +61,16 @@ def main() -> int:
     #  A) rule-based (conservative rule-based — keeps facts, drops filler)
     #  B) extractive (aggressive first-sentence summarizer — loses detail)
     regimes = []
-    proc = subprocess.run(
-        ["python3", str(Path.home() / ".host/scripts/compress_context.py"),
-         "-l", "2", "--reach", "-r", "0.6", str(CTX)],
-        capture_output=True, text=True, timeout=120,
-    )
-    if proc.returncode != 0:
-        print(f"compressor failed: {proc.stderr[:500]}", file=sys.stderr)
-        return 1
-    regimes.append(("rule-based compressor", proc.stdout))
+    compressor = os.environ.get("COMPRESSOR", "")
+    if compressor:
+        proc = subprocess.run(
+            ["python3", compressor, "-l", "2", "--reach", "-r", "0.6", str(CTX)],
+            capture_output=True, text=True, timeout=120,
+        )
+        if proc.returncode != 0:
+            print(f"compressor failed: {proc.stderr[:500]}", file=sys.stderr)
+            return 1
+        regimes.append(("rule-based compressor", proc.stdout))
 
     from compaction_drill import extractive_compress
     regimes.append(("built-in extractive (35%)", extractive_compress(ctx_text, ratio=0.35)))

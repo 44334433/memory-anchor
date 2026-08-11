@@ -20,7 +20,7 @@ class FakeContext:
     def __init__(self):
         self.session_id = "demo-session"
         self.intent = "build feature X"
-        self.rules = [RuleItem(rule_id="R1", text=R1, source="GOV.md")]
+        self.rules = [RuleItem(rule_id="R1", text=R1, source="AGENTS.md")]
         self.todos = [
             TodoItem(todo_id="t1", title="wire RecoveryInjector",
                      next_action="edit recovery.py"),
