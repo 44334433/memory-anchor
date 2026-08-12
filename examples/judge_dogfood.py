@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Dogfood: run a real rule-based compressor + cam judge on a real briefing.
+"""Dogfood: run a real rule-based compressor + cam judge on a real news digest.
 
 Design-contract compliant: every manifest item is a *verbatim* snippet lifted
-from the briefing (preserve() must be fed from source text, not from a
+from the source article (preserve() must be fed from source text, not from a
 paraphrase — that is memory-anchor's own contract #2).
 
 Pipeline:
-  1. lift 8 key sentences verbatim from the briefing -> manifest
-  2. compress the briefing with a local compressor script
+  1. lift 8 key sentences verbatim from the article -> manifest
+  2. compress the article with a local compressor script
      (path via --compressor <path> or $COMPRESSOR, default: none — skip)
   3. audit compressed output with cam judge -> measure verbatim retention
 """
@@ -24,7 +24,7 @@ from memory_anchor.models import RuleItem, StateManifest, TodoItem
 BASE = Path("/tmp/judge-dogfood")
 CTX = BASE / "context.txt"
 
-# Verbatim sentences lifted from the source briefing (line: text)
+# Verbatim sentences lifted from the source article (line: text)
 LIFTED = [
     # rules (things the agent must keep operating by)
     ("R1", "Meta 发布 Muse Glimmer：30B 开源\"常驻本地 Agent\"模型"),

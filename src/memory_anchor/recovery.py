@@ -64,6 +64,10 @@ class RecoveryInjector:
                 line = f"- {d.title}: {d.decision}"
                 if d.rationale:
                     line += f" (why: {d.rationale})"
+                if d.source:
+                    line += f" (source: {d.source})"
+                if d.evidence:
+                    line += f" (evidence: {d.evidence})"
                 sections.append(line)
 
         if include_progress and manifest.progress:

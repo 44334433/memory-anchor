@@ -161,10 +161,16 @@ Reproduce: `python3 examples/judge_dogfood.py`.
 - **v0.3 (this)** — `cam judge` compaction audit (verbatim/paraphrased/lost
   classification, JSON report, CI gates), measured dogfood against real
   compressors
-- **v0.3.1 (this)** — decision provenance: decisions carry `source` + `evidence`
+- **v0.3.1** — decision provenance: decisions carry `source` + `evidence`
   (where the decision came from, what it was based on), and `cam judge` grades
   provenance as part of the decision — a summary that keeps the conclusion but
   drops the *why* no longer scores verbatim
+- **v0.3.2 (this)** — recovery restores provenance too: the recovery block now
+  re-injects `source` + `evidence` alongside each decision, and a new
+  `recover_drill` example verifies the recover side end-to-end (rules / todos /
+  decisions-with-provenance / progress, per-category verbatim report, exit-code
+  gate). Found by running the drill on a manifest with provenance: decisions
+  recovered at 50% before the fix, 100% after.
 - **v0.4** — framework adapters (LangChain / Claude Code / OpenHands…), SQLite
   backend, optional LLM judge for semantic retention
 
@@ -181,6 +187,19 @@ This is exactly the failure mode v0.3.1 targets: decisions now carry
 `source` + `evidence`, and `cam judge` treats provenance as part of the
 decision — a compressed memory that keeps "we decided X" but drops "because
 file Y behaved this way on date Z" no longer passes the audit.
+
+v0.3.2 closes the loop on the *recover* side: the recovery block re-injects
+`source` + `evidence` with every decision, so provenance survives the whole
+preserve → compact → recover cycle, not just the audit. `examples/recover_drill.py`
+checks this mechanically:
+
+```
+python3 examples/recover_drill.py --manifest m.json --after summary.txt
+# verdict: recovery rate 100% (9/9) — gate PASSED
+```
+
+Run it against your own manifest and the summary your compressor actually
+produced; missing items print per category and fail the exit code.
 
 ## Related work
 

@@ -43,6 +43,30 @@ def test_done_todos_excluded_from_block():
     assert "finished thing" not in block
 
 
+def test_decision_provenance_restored_verbatim():
+    """v0.3.2 regression: source/evidence must be re-injected with the decision
+    (recover side), not only graded by cam judge (audit side)."""
+    m = StateManifest(
+        session_id="s2",
+        decisions=[DecisionItem(
+            decision_id="d1", title="use JSON files",
+            decision="store state as JSON", rationale="zero deps",
+            source="docs/design.md#L42",
+            evidence="benchmark 2026-08-11: 12ms vs 900ms")],
+    )
+    block = RecoveryInjector().build_recovery_block(m)
+    assert "(source: docs/design.md#L42)" in block
+    assert "(evidence: benchmark 2026-08-11: 12ms vs 900ms)" in block
+
+
+def test_decision_without_provenance_unchanged():
+    """Empty source/evidence must not change the block shape (backward compat)."""
+    block = RecoveryInjector().build_recovery_block(_manifest())
+    assert "JSON files" in block
+    assert "(source:" not in block
+    assert "(evidence:" not in block
+
+
 def test_immutable_rules_never_trimmed_even_with_tiny_budget():
     inj = RecoveryInjector()
     block = inj.build_recovery_block(_manifest(), token_budget=10)
