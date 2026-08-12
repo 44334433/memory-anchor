@@ -158,7 +158,7 @@ Reproduce: `python3 examples/judge_dogfood.py`.
 - **v0.1** — core classes, JSON schema, demo closure, CI, bilingual docs
 - **v0.2** — CLI (`cam before/after/status/verify`), compaction drill
   (measured retention experiment)
-- **v0.3 (this)** — `cam judge` compaction audit (verbatim/paraphrased/lost
+- **v0.3 (done)** — `cam judge` compaction audit (verbatim/paraphrased/lost
   classification, JSON report, CI gates), measured dogfood against real
   compressors
 - **v0.3.1** — decision provenance: decisions carry `source` + `evidence`

@@ -118,7 +118,7 @@ cam judge --before m.json --after summary.txt --min-verbatim 90   # CI 门禁（
 
 - **v0.1** — 核心类、JSON Schema、演示闭环、CI、双语文档
 - **v0.2** — CLI（`cam before/after/status/verify`）、compaction drill（实测保留率实验）
-- **v0.3（当前）** — cam judge 压缩审计（verbatim/paraphrased/lost 分类、JSON 报告、CI 门禁）、真实压缩器 dogfood 实测
+- **v0.3（已完成）** — cam judge 压缩审计（verbatim/paraphrased/lost 分类、JSON 报告、CI 门禁）、真实压缩器 dogfood 实测
 - **v0.3.1** — 决策 provenance：决策携带 `source` + `evidence`（来源与依据），`cam judge` 把 provenance 计入评分——只留结论丢掉"为什么"的摘要不再算逐字存活
 - **v0.3.2（当前）** — 恢复侧闭环：恢复块现在把 `source` + `evidence` 随决策一起逐字重注入；新增 `examples/recover_drill.py` 恢复演练（规则/待办/带 provenance 决策/进度逐类验证+退出码门禁）。修复由演练实证驱动：修复前带 provenance 决策恢复率 50%，修复后 100%
 - **v0.4** — 框架适配器（LangChain / Claude Code / OpenHands…）、SQLite 后端、可选 LLM 语义保留评估
