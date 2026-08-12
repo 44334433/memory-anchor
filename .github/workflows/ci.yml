@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package
+        run: python -m pip install -e .
+      - name: Run tests
+        run: python -m pytest tests/ -q
+      - name: Check version consistency
+        run: |
+          python - <<'EOF'
+          import re
+          py = open('pyproject.toml').read()
+          v1 = re.search(r'version = "([^"]+)"', py).group(1)
+          ini = open('src/memory_anchor/__init__.py').read()
+          v2 = re.search(r'__version__ = "([^"]+)"', ini).group(1)
+          print(f"pyproject: {v1}, __init__: {v2}")
+          assert v1 == v2, "version mismatch between pyproject.toml and __init__.py"
+          EOF
