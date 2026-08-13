@@ -89,7 +89,7 @@ takes a long context, runs it through a compressor (built-in extractive, or
 any external command via `--compressor`), and measures how many tracked key
 items survive verbatim — with and without memory-anchor.
 
-Real run against 8 KB of Chinese-language sample text
+Real run against ~8K characters (8,035) of Chinese-language sample text
 (10 tracked items: rules / todos / decisions / progress):
 
 | compressor | context | control (compressor alone) | treatment (+ memory-anchor) |
@@ -129,16 +129,17 @@ reported as lost — rules must survive verbatim or not at all. `--min-retention
 / `--min-verbatim` turn the report into a tripwire for your compression
 pipeline (cron / CI): exit 1 when retention drops below the threshold.
 
-Measured dogfood run (8 key items from a sample context, lifted verbatim,
+Measured dogfood run (7 key items from a sample context, lifted verbatim,
+5 tracked in the manifest (3 rules + 2 todos),
 two real compressors):
 
 | compressor | size | verbatim | lost |
 |---|---|---|---|
-| rule-based compressor (conservative) | 100% | 5/5 (100%) | 0 |
-| built-in extractive (35%) | 35% | 3/5 (60%) | 2 (rules R2/R3) |
+| built-in extractive (35%) | 47% | 2/5 (40%) | 3 (R2/R3/T1) |
+| your own via `--compressor` | — | run it | — |
 
-The conservative compressor keeps everything; the aggressive one silently
-drops two tracked rules — exactly the loss `judge` exists to make visible.
+The built-in extractive one silently drops three tracked items — exactly the
+loss `judge` exists to make visible.
 Reproduce: `python3 examples/judge_dogfood.py`.
 
 ## Design contract

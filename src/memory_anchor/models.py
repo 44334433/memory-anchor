@@ -1,4 +1,4 @@
-"""Data models for the compaction-aware memory layer (v0.1).
+"""Data models for the compaction-aware memory layer.
 
 Every item carries *verbatim* text — the whole point of this library is that
 summary models must never be allowed to paraphrase rules, todos, decisions or

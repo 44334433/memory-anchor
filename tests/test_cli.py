@@ -1,4 +1,4 @@
-"""CLI integration tests for `cam` (v0.2)."""
+"""CLI integration tests for `cam`."""
 
 import json
 import subprocess
