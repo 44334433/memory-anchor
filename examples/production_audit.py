@@ -14,7 +14,7 @@ after every real compaction.
 
 The bundled ``examples/sample/snapshot.md`` + ``examples/sample/summary.txt``
 pair reproduces the audit on sample data (no real session content):
-a snapshot whose 8 key items all survive verbatim in the summary.
+a snapshot whose 12 key items all survive verbatim in the summary.
 
 Zero dependencies (stdlib). Numbers come from the audit itself — no
 hard-coded expectations.
