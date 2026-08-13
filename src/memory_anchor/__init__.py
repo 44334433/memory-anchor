@@ -1,6 +1,6 @@
 """memory-anchor: compaction-aware memory layer for LLM agents.
 
-Top-level facade. Typical usage (2 lines):
+Top-level facade. Typical usage:
 
     mem = CompactableMemory(base_dir=Path(".memory"))
     mem.preserve(ctx)                                  # before compaction
@@ -37,7 +37,7 @@ __all__ = [
 
 
 class CompactableMemory:
-    """One-line top-level API:
+    """Top-level facade:
 
         mem = CompactableMemory(base_dir=Path(".memory"))
         mem.preserve(ctx)                       # = on_before_compact

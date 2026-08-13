@@ -122,7 +122,9 @@ class StateManifest:
           (a finished item is not resurrected by a newer snapshot that
           forgot about it)
         - decisions marked ``superseded`` in the older manifest stay
-          superseded (no re-litigating a settled question)
+          superseded when the newer snapshot no longer carries that decision
+          (a settled question is not resurrected by a snapshot that forgot
+          it; a newer snapshot that *explicitly* re-decides the same id wins)
         - breadcrumbs are unioned and deduplicated
         """
         merged = StateManifest(

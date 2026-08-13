@@ -2,9 +2,9 @@
 
 The recovery block is a system-level message that re-anchors the *verbatim*
 rules, todos, decisions and verification paths that a summarizer would
-otherwise flatten away. Trimming order when the token budget is tight:
-L3 recovery pointers → L2 low-priority todos/decisions → L2 high-priority.
-L1 (``immutable`` rules) is never trimmed.
+otherwise flatten away. L1 (``immutable`` rules) is never trimmed; when the
+token budget is tight, L2 todos/decisions and L3 recovery pointers are
+trimmed alphabetically by title.
 """
 
 from __future__ import annotations
