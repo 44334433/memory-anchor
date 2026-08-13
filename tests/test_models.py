@@ -103,3 +103,20 @@ def test_legacy_decision_without_provenance_still_parses():
     })
     assert m.decisions[0].source == ""
     assert m.decisions[0].evidence == ""
+
+
+def test_from_dict_ignores_unknown_fields():
+    """Forward-compatible parsing: fields added by newer schemas or by
+    third-party generators must not crash strict dataclass construction."""
+    m = StateManifest.from_dict({
+        "schema_version": 1, "session_id": "future", "intent": "",
+        "rules": [{"rule_id": "R1", "text": "keep verbatim", "owner": "future-schema"}],
+        "todos": [{"todo_id": "T1", "title": "ship", "status": "pending", "priority": 9}],
+        "decisions": [{"decision_id": "D1", "title": "t", "decision": "go", "score": 0.9}],
+        "progress": [{"step": "audit", "pointer": "unknown-field"}],
+        "recovery_pointers": [],
+    })
+    assert m.rules[0].text == "keep verbatim"
+    assert m.todos[0].title == "ship"
+    assert m.decisions[0].decision == "go"
+    assert m.progress[0].step == "audit"

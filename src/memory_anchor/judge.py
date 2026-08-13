@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import difflib
 import json
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -51,12 +52,32 @@ class ItemVerdict:
     similarity: float  # difflib ratio on folded text (1.0 = identical)
 
 
+_ITEM_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
+
 def _fold(text: str) -> str:
     """Whitespace folding: compress all runs of whitespace to one space."""
     return " ".join(text.split())
 
 
-def _similarity(folded_item: str, folded_corpus: str) -> float:
+def _strip_line_markers(text: str) -> str:
+    """Strip list markup from every line until stable.
+
+    Snapshot converters (e.g. ``md_snapshot_to_manifest``) carry items
+    without their bullet prefix, while the compressed text usually keeps the
+    original "- " markers. Numbering ("5. ") may sit on either side of the
+    bullet, so stripping iterates to a fixed point (bullets and numbering in
+    any order). Comparing bulleted vs non-bulleted forms must not turn a
+    byte-for-byte item into "paraphrased".
+    """
+    prev = None
+    out = text
+    while prev != out:
+        prev = out
+        out = "\n".join(_ITEM_RE.sub("", ln) for ln in out.splitlines())
+    return out
+
+
+def _similarity(folded_item: str, folded_corpus: str, stripped_corpus: str) -> float:
     """Best similarity of the item against any window of the corpus.
 
     A plain SequenceMatcher.ratio() on the whole corpus is useless for short
@@ -64,6 +85,12 @@ def _similarity(folded_item: str, folded_corpus: str) -> float:
     it is present. Instead we search for the item as a subsequence window.
     """
     if folded_item in folded_corpus:
+        return 1.0
+    # bullet-insensitive match: converters strip list markup, summaries keep
+    # it (stripping must happen per-line *before* folding — a folded corpus
+    # is a single line whose markers are buried mid-text)
+    stripped_item = _strip_line_markers(folded_item)
+    if stripped_item != folded_item and stripped_item in stripped_corpus:
         return 1.0
     # sliding-window best match (window = item length * 2, step = item length)
     n = len(folded_item)
@@ -74,7 +101,12 @@ def _similarity(folded_item: str, folded_corpus: str) -> float:
     i = 0
     while i < len(folded_corpus):
         win = folded_corpus[i : i + n * 2]
-        best = max(best, difflib.SequenceMatcher(None, folded_item, win).ratio())
+        # item-relative match: what fraction of the ITEM is matched, not of
+        # the whole window — a long item fully present in a window that also
+        # carries neighboring text must not be diluted toward zero.
+        matcher = difflib.SequenceMatcher(None, folded_item, win)
+        matched_chars = sum(b.size for b in matcher.get_matching_blocks())
+        best = max(best, matched_chars / n)
         i += step
     return best
 
@@ -92,15 +124,16 @@ def _classify(sim: float, immutable: bool) -> str:
 def audit_manifest(manifest: StateManifest, after_text: str) -> List[ItemVerdict]:
     """Classify every tracked item of *manifest* against *after_text*."""
     folded = _fold(after_text)
+    stripped = _fold(_strip_line_markers(after_text))
     verdicts: List[ItemVerdict] = []
 
     for r in manifest.rules:
-        sim = _similarity(_fold(r.text), folded)
+        sim = _similarity(_fold(r.text), folded, stripped)
         verdicts.append(
             ItemVerdict("rules", r.rule_id, r.text, _classify(sim, r.immutable), round(sim, 4))
         )
     for t in manifest.todos:
-        sim = _similarity(_fold(t.title), folded)
+        sim = _similarity(_fold(t.title), folded, stripped)
         verdicts.append(
             ItemVerdict("todos", t.todo_id, t.title, _classify(sim, False), round(sim, 4))
         )
@@ -113,12 +146,12 @@ def audit_manifest(manifest: StateManifest, after_text: str) -> List[ItemVerdict
         # "compaction preserves conclusions but drops provenance").
         provenance = " ".join(x for x in (d.rationale, d.source, d.evidence) if x)
         matched = f"{d.decision} {provenance}".strip()
-        sim = _similarity(_fold(matched), folded)
+        sim = _similarity(_fold(matched), folded, stripped)
         verdicts.append(
             ItemVerdict("decisions", d.decision_id, d.title, _classify(sim, False), round(sim, 4))
         )
     for p in manifest.progress:
-        sim = _similarity(_fold(p.step), folded)
+        sim = _similarity(_fold(p.step), folded, stripped)
         verdicts.append(
             ItemVerdict("progress", p.step, p.step, _classify(sim, False), round(sim, 4))
         )

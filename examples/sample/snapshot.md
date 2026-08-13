@@ -1,0 +1,28 @@
+# Pre-compaction state snapshot (sample)
+
+> Sample data — shape mirrors what agent frameworks dump before compacting
+> a long session: verbatim items the session cannot afford to lose.
+
+## Plans
+
+- Ship the v0.3.3 release with the audit fixes
+- Reply to the reviewer comment about provenance grading
+- Update the bilingual README before pushing
+
+## Decisions
+
+- Keep zero runtime dependencies — stdlib only
+- Compaction audit belongs in `cam judge`, not in a new tool
+- Rules must survive verbatim or not at all
+
+## Progress
+
+- Converted the snapshot format into a judge-ready manifest
+- Ran the audit against the real summary: all 8 items preserved
+- Added regression tests for bullet-marker and long-item matching
+
+## Verification checklist
+
+- [ ] Run `pytest tests/ -q` — all green
+- [ ] `cam judge` gates pass on the sample pair
+- [ ] Release review passes before push

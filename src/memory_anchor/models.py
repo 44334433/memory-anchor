@@ -10,11 +10,23 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, Type
 
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="microseconds")
+
+
+def _known(cls: Type, data: Dict[str, Any]) -> Dict[str, Any]:
+    """Filter unknown keys for forward-compatible parsing.
+
+    Manifest files may carry fields added by newer schemas or by third-party
+    generators; strict ``cls(**data)`` would crash on them. Known fields only
+    keeps parsing stable while unknown data is dropped (the manifest keeps
+    its verbatim contract items, which is all judge grades).
+    """
+    known = set(cls.__dataclass_fields__)
+    return {k: v for k, v in data.items() if k in known}
 
 
 @dataclass
@@ -106,10 +118,10 @@ class StateManifest:
             session_id=str(data.get("session_id", "")),
             created_at=str(data.get("created_at", "")),
             intent=str(data.get("intent", "")),
-            rules=[RuleItem(**r) for r in data.get("rules", [])],
-            todos=[TodoItem(**t) for t in data.get("todos", [])],
-            decisions=[DecisionItem(**d) for d in data.get("decisions", [])],
-            progress=[ProgressItem(**p) for p in data.get("progress", [])],
+            rules=[RuleItem(**_known(RuleItem, r)) for r in data.get("rules", [])],
+            todos=[TodoItem(**_known(TodoItem, t)) for t in data.get("todos", [])],
+            decisions=[DecisionItem(**_known(DecisionItem, d)) for d in data.get("decisions", [])],
+            progress=[ProgressItem(**_known(ProgressItem, p)) for p in data.get("progress", [])],
             recovery_pointers=[str(p) for p in data.get("recovery_pointers", [])],
         )
 

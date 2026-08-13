@@ -142,6 +142,37 @@ The built-in extractive one silently drops three tracked items — exactly the
 loss `judge` exists to make visible.
 Reproduce: `python3 examples/judge_dogfood.py`.
 
+## Audit your own framework's snapshot
+
+Many agent frameworks dump a Markdown state snapshot right before
+compacting (Plans / Decisions / Progress / Verification). `cam judge`
+needs a manifest — the converter turns your snapshot into one, and
+`production_audit` wires the pair into a gate you can run after every
+real compaction:
+
+```bash
+python3 examples/md_snapshot_to_manifest.py snapshot.md -o manifest.json
+python3 examples/production_audit.py manifest.json summary.txt \
+    --min-retention 95
+# audit: 12 items — verbatim 12, paraphrased 0, lost 0
+# retention 100.0% | verbatim 100.0%   (exit 0 = gate passed)
+```
+
+Item text is carried over *verbatim* — the converter never rewrites or
+summarizes, it only strips list markup (the same preserver contract the
+framework-side snapshot plugin follows). Section headings map by name
+(Plans/计划→todos, Decisions/决策→decisions, Progress/进度→progress,
+Rules/规则→immutable rules, Verification/待验证→pending todos); add your own
+with `--section 'Heading=kind'`.
+
+Measured on 5 real production snapshot/summary pairs (75 tracked items from
+a long-running agent session): **100% verbatim, 100% retention** — the
+snapshot-preserver design holds up in production. The audit itself exposed
+three `judge` defects (fixed in v0.3.3): a stripped bullet marker read as
+paraphrase, long items diluted by the sliding window, and unknown manifest
+fields crashing strict parsing. Sample pair included:
+`python3 examples/md_snapshot_to_manifest.py examples/sample/snapshot.md -o /tmp/m.json && python3 examples/production_audit.py /tmp/m.json examples/sample/summary.txt`
+
 ## Design contract
 
 1. **Verbatim or nothing.** Rules, decisions and verification paths are stored
@@ -166,12 +197,21 @@ Reproduce: `python3 examples/judge_dogfood.py`.
   (where the decision came from, what it was based on), and `cam judge` grades
   provenance as part of the decision — a summary that keeps the conclusion but
   drops the *why* no longer scores verbatim
-- **v0.3.2 (this)** — recovery restores provenance too: the recovery block now
+- **v0.3.2** — recovery restores provenance too: the recovery block now
   re-injects `source` + `evidence` alongside each decision, and a new
   `recover_drill` example verifies the recover side end-to-end (rules / todos /
   decisions-with-provenance / progress, per-category verbatim report, exit-code
   gate). Found by running the drill on a manifest with provenance: decisions
   recovered at 50% before the fix, 100% after.
+- **v0.3.3 (this)** — audit your own framework's snapshots: new
+  `md_snapshot_to_manifest` converter turns a pre-compaction Markdown state
+  snapshot (Plans / Decisions / Progress / Verification sections) into a
+  judge-ready manifest, and `production_audit` wires the pair into the gate.
+  Hardened `cam judge` with fixes found by auditing 5 real production
+  snapshot/summary pairs (75 items, 100% verbatim): bullet-marker differences
+  no longer count as paraphrase, long items are no longer diluted by window
+  length, and manifests with unknown (newer-schema) fields parse instead of
+  crashing.
 - **v0.4** — framework adapters (LangChain / Claude Code / OpenHands…), SQLite
   backend, optional LLM judge for semantic retention
 

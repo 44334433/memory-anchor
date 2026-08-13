@@ -108,6 +108,22 @@ cam judge --before m.json --after summary.txt --min-verbatim 90   # CI 门禁（
 
 内置提取式压缩器会静默丢弃三条被追踪项——这正是 `judge` 存在的意义：让这种丢失可见。复现：`python3 examples/judge_dogfood.py`。
 
+## 审计你自己的框架快照
+
+很多 agent 框架在压缩前会落盘一份 Markdown 状态快照（计划/决策/进度/待验证节）。`cam judge` 需要 manifest——转换器把你的快照转成 manifest，`production_audit` 把配对接成门禁，每次真实压缩后都可以跑：
+
+```bash
+python3 examples/md_snapshot_to_manifest.py snapshot.md -o manifest.json
+python3 examples/production_audit.py manifest.json summary.txt \
+    --min-retention 95
+# audit: 12 items — verbatim 12, paraphrased 0, lost 0
+# retention 100.0% | verbatim 100.0%   (exit 0 = 门禁通过)
+```
+
+条目文本**逐字**搬运——转换器绝不改写或概括，只剥离列表标记（与框架侧快照插件的 preserver 契约一致）。节名映射：Plans/计划→todos、Decisions/决策→decisions、Progress/进度→progress、Rules/规则→不可变规则、Verification/待验证→pending todos；自定义节用 `--section '节名=kind'`。
+
+5 对真实生产快照/总结对实测（75 条追踪项，来自一个长会话 agent 的生产日志）：**100% 逐字、100% 保留率**——快照-preserver 设计在生产环境成立。审计本身暴露了 3 个 judge 缺陷（v0.3.3 已修）：被剥离的 bullet 标记误判为转述、长条目被滑动窗口稀释、含未知字段的 manifest 严格解析崩溃。自带样例对可复现：`python3 examples/md_snapshot_to_manifest.py examples/sample/snapshot.md -o /tmp/m.json && python3 examples/production_audit.py /tmp/m.json examples/sample/summary.txt`
+
 ## 设计契约
 
 1. **要么逐字，要么没有。** 规则、决策、验证路径以原文存储并按原文注入，不做任何转述。摘要模型无法精确复现的内容，就不该出现在摘要里。
@@ -120,7 +136,8 @@ cam judge --before m.json --after summary.txt --min-verbatim 90   # CI 门禁（
 - **v0.2** — CLI（`cam before/after/status/verify`）、compaction drill（实测保留率实验）
 - **v0.3（已完成）** — cam judge 压缩审计（verbatim/paraphrased/lost 分类、JSON 报告、CI 门禁）、真实压缩器 dogfood 实测
 - **v0.3.1** — 决策 provenance：决策携带 `source` + `evidence`（来源与依据），`cam judge` 把 provenance 计入评分——只留结论丢掉"为什么"的摘要不再算逐字存活
-- **v0.3.2（当前）** — 恢复侧闭环：恢复块现在把 `source` + `evidence` 随决策一起逐字重注入；新增 `examples/recover_drill.py` 恢复演练（规则/待办/带 provenance 决策/进度逐类验证+退出码门禁）。修复由演练实证驱动：修复前带 provenance 决策恢复率 50%，修复后 100%
+- **v0.3.2** — 恢复侧闭环：恢复块现在把 `source` + `evidence` 随决策一起逐字重注入；新增 `examples/recover_drill.py` 恢复演练（规则/待办/带 provenance 决策/进度逐类验证+退出码门禁）。修复由演练实证驱动：修复前带 provenance 决策恢复率 50%，修复后 100%
+- **v0.3.3（当前）** — 审计你自己的框架快照：新增 `md_snapshot_to_manifest` 转换器（把压缩前的 Markdown 状态快照——计划/决策/进度/待验证节——转成 judge 可审计的 manifest）+ `production_audit` 门禁脚本。用 5 对真实生产快照/总结对（75 项，100% 逐字）审计时发现并修复 3 个 judge 缺陷：bullet 标记差异不再误判为转述、长条目不再被滑动窗口稀释、含未知（新 schema）字段的 manifest 宽容解析不再崩溃
 - **v0.4** — 框架适配器（LangChain / Claude Code / OpenHands…）、SQLite 后端、可选 LLM 语义保留评估
 
 ## 相关项目

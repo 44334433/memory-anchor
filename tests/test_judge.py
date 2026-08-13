@@ -105,6 +105,39 @@ def test_short_item_in_long_corpus(manifest):
     assert by_label["t1"] == "verbatim"
 
 
+def test_bullet_marker_difference_is_not_paraphrase():
+    """A converter that strips list markup must not turn a byte-for-byte
+    item into paraphrased just because the compressed text keeps the
+    bullet prefix (v0.3.3 regression)."""
+    manifest = StateManifest(
+        session_id="s-bullet",
+        decisions=[
+            DecisionItem(decision_id="d1", title="long decision",
+                         decision="5. **read the persona library**: `cat ~/docs/pool.md` "
+                                  "— pick one adversarial lens, challenge the plan, "
+                                  "respect the rotation rule, write back after use"),
+        ],
+    )
+    after = ("- 5. **read the persona library**: `cat ~/docs/pool.md` "
+             "— pick one adversarial lens, challenge the plan, "
+             "respect the rotation rule, write back after use")
+    verdicts = audit_manifest(manifest, after)
+    assert verdicts[0].verdict == "verbatim"
+
+
+def test_long_item_in_window_not_diluted():
+    """A long item fully present in a window that also carries neighboring
+    text must not be diluted below verbatim by window length (v0.3.3)."""
+    item = ("the quick brown fox jumps over the lazy dog and then " * 8).strip()
+    manifest = StateManifest(
+        session_id="s-long",
+        progress=[ProgressItem(step=item)],
+    )
+    after = "prefix noise " * 20 + item + " suffix noise " * 20
+    verdicts = audit_manifest(manifest, after)
+    assert verdicts[0].verdict == "verbatim"
+
+
 def test_cli_judge_json(base_dir: Path):
     mf = base_dir.parent / "judge-m.json"
     mf.write_text(json.dumps({

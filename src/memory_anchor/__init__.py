@@ -22,7 +22,7 @@ from .models import (
 from .recovery import RecoveryInjector
 from .store import MemoryStore
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 
 __all__ = [
     "CompactableMemory",
